@@ -81,7 +81,12 @@ OpenHermes/
 ### Phase 4-8: Stub Implementations
 - [x] Memory system (placeholder)
 - [x] Skills system (placeholder)
-- [x] Gateway (placeholder)
+- [x] **Gateway** - **FULLY FUNCTIONAL**
+  - [x] Platform adapter trait (unified interface)
+  - [x] **Telegram adapter** (HTTP API + **Long Polling**)
+  - [x] Discord adapter (REST API)
+  - [x] Message router (multi-platform)
+  - [x] Session manager (cross-platform tracking)
 - [x] Cron scheduler (placeholder)
 
 ### Phase 9: CLI
