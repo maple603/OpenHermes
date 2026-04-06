@@ -9,6 +9,7 @@ pub mod todo_tool;
 pub mod clarify_tool;
 pub mod checkpoint_tool;
 pub mod memory_tools;
+pub mod skills_tools;
 
 pub use registry::{discover_tools, handle_function_call, Tool, ToolRegistry, REGISTRY};
 
@@ -56,6 +57,12 @@ pub fn init_tools() {
     REGISTRY.register(Arc::new(memory_tools::MemoryReadTool));
     REGISTRY.register(Arc::new(memory_tools::MemoryWriteTool));
     REGISTRY.register(Arc::new(memory_tools::MemorySearchTool));
+    
+    // Skills tools
+    REGISTRY.register(Arc::new(skills_tools::SkillsInstallTool));
+    REGISTRY.register(Arc::new(skills_tools::SkillsListTool));
+    REGISTRY.register(Arc::new(skills_tools::SkillsSyncTool));
+    REGISTRY.register(Arc::new(skills_tools::SkillsHubSearchTool));
     
     let tool_count = REGISTRY.get_all_tool_names().len();
     tracing::info!("Initialized {} built-in tools", tool_count);

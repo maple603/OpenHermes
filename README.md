@@ -42,7 +42,7 @@ OpenHermes/
 - [x] System prompt builder
 - [x] **Parallel tool execution** (tokio::task::JoinSet)
 
-### Phase 3: Tool System (22 tools implemented)
+### Phase 3: Tool System (26 tools implemented)
 - [x] Central tool registry with trait-based design
 - [x] File tools (read_file, write_file)
 - [x] **Terminal tool** (execute_code with timeout, **background processes**, process management)
@@ -64,6 +64,18 @@ OpenHermes/
   - [x] **Memory write tool** (real database insert with auto-ID)
   - [x] **Memory search tool** (real session history search)
   - [x] **Global state management** (thread-safe Arc<RwLock>)
+- [x] **MCP (Model Context Protocol) Client** - **FULLY FUNCTIONAL**
+  - [x] **MCP server connection** (JSON-RPC over HTTP)
+  - [x] **Tool discovery** (automatic tools/list)
+  - [x] **Tool wrapper** (integrates with openhermes-tools registry)
+  - [x] **Multi-server support** (connect to multiple MCP servers)
+  - [x] **Authentication** (API key, custom headers)
+  - [x] **Error handling** (JSON-RPC errors, HTTP errors)
+- [x] **Skills System Tools** - **FULLY FUNCTIONAL**
+  - [x] **skills_install** - Install skills from hub or local
+  - [x] **skills_list** - List installed skills with status
+  - [x] **skills_sync** - Sync and update skills
+  - [x] **skills_hub_search** - Search skills marketplace
 - [x] Tool discovery and registration
 
 ### Phase 4-8: Stub Implementations

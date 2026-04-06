@@ -5,6 +5,7 @@ members = [
     "openhermes-cli",       # CLI interface
     "openhermes-gateway",   # Messaging platform gateway
     "openhermes-memory",    # Memory system (SQLite + FTS5)
+    "openhermes-mcp",       # Model Context Protocol client
     "openhermes-skills",    # Skills system
     "openhermes-cron",      # Cron scheduler
     "openhermes-config",    # Configuration management
