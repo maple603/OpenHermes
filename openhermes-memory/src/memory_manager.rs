@@ -1,8 +1,16 @@
 //! Memory manager orchestrating built-in and external providers.
 
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use anyhow::Result;
 use async_trait::async_trait;
 use serde_json::Value;
+use tracing::info;
+
+use crate::database::MemoryDatabase;
+use crate::fts5::FTSSearch;
+use crate::builtin_provider::BuiltinMemoryProvider;
 
 /// Memory provider trait
 #[async_trait]
@@ -17,6 +25,8 @@ pub trait MemoryProvider: Send + Sync {
 pub struct MemoryManager {
     providers: Vec<Box<dyn MemoryProvider>>,
     has_external: bool,
+    database: Option<Arc<MemoryDatabase>>,
+    search: Option<FTSSearch>,
 }
 
 impl MemoryManager {
@@ -24,7 +34,28 @@ impl MemoryManager {
         Self {
             providers: Vec::new(),
             has_external: false,
+            database: None,
+            search: None,
         }
+    }
+
+    /// Initialize with database
+    pub async fn with_database(db_path: PathBuf) -> Result<Self> {
+        let database = Arc::new(MemoryDatabase::new(&db_path).await?);
+        let search = FTSSearch::new(database.pool().clone());
+        
+        let mut manager = Self {
+            providers: Vec::new(),
+            has_external: false,
+            database: Some(database),
+            search: Some(search),
+        };
+
+        // Add builtin provider
+        manager.add_provider(Box::new(BuiltinMemoryProvider::new()))?;
+
+        info!("Memory manager initialized with database: {}", db_path.display());
+        Ok(manager)
     }
 
     pub fn add_provider(&mut self, provider: Box<dyn MemoryProvider>) -> Result<()> {
@@ -99,6 +130,16 @@ impl MemoryManager {
             })
             .collect::<Vec<_>>()
             .join("\n\n")
+    }
+
+    /// Get database reference
+    pub fn database(&self) -> Option<&Arc<MemoryDatabase>> {
+        self.database.as_ref()
+    }
+
+    /// Get search engine
+    pub fn search(&self) -> Option<&FTSSearch> {
+        self.search.as_ref()
     }
 }
 

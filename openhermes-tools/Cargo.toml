@@ -9,12 +9,20 @@ description = "Tool system for OpenHermes Agent"
 
 [dependencies]
 openhermes-constants = { path = "../openhermes-constants" }
+openhermes-memory = { path = "../openhermes-memory" }
 
 tokio.workspace = true
 async-trait.workspace = true
 async-openai.workspace = true
 serde_json.workspace = true
+serde.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 dashmap.workspace = true
 once_cell.workspace = true
+reqwest = { workspace = true, features = ["json"] }
+glob = "0.3"
+url = "2.5"
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1.10"
+urlencoding = "2.1"

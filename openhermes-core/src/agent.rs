@@ -11,10 +11,11 @@ use async_openai::types::{
 };
 use async_openai::Client;
 use parking_lot::Mutex;
+use tokio::task::JoinSet;
 use tracing::{debug, info, warn};
 
 use openhermes_config::HermesConfig;
-use openhermes_tools::{discover_tools, ToolRegistry};
+use openhermes_tools::{discover_tools, init_tools, ToolRegistry};
 
 use super::budget::IterationBudget;
 use super::context_compressor::ContextCompressor;
@@ -37,6 +38,9 @@ impl AIAgent {
     pub async fn from_config(config: &HermesConfig) -> Result<Self> {
         // Discover and register tools
         discover_tools();
+        
+        // Initialize built-in tools
+        init_tools();
 
         // Create OpenAI-compatible client
         let client = create_client(config).await?;
@@ -128,33 +132,53 @@ impl AIAgent {
                 info!("LLM requested {} tool calls", tool_calls.len());
                 tool_calls_total += tool_calls.len();
 
-                // Execute tools
-                for tool_call in tool_calls {
-                    let tool_name = &tool_call.function.name;
-                    let tool_args = &tool_call.function.arguments;
+                // Execute tools in parallel using JoinSet
+                let mut join_set = JoinSet::new();
+                let tool_calls_clone = tool_calls.clone();
+                
+                // Spawn all tool calls
+                for tool_call in &tool_calls_clone {
+                    let tool_call_id = tool_call.id.clone();
+                    let tool_name = tool_call.function.name.clone();
+                    let tool_args = tool_call.function.arguments.clone();
+                    
+                    join_set.spawn(async move {
+                        debug!("Executing tool: {}", tool_name);
+                        let result = openhermes_tools::handle_function_call(&tool_name, &tool_args).await;
+                        (tool_call_id, tool_name, result)
+                    });
+                }
 
-                    debug!("Executing tool: {}", tool_name);
-
-                    // Execute tool
-                    let result = openhermes_tools::handle_function_call(tool_name, tool_args).await;
-
-                    let result_content = match result {
-                        Ok(output) => output,
-                        Err(e) => {
-                            warn!("Tool {} failed: {}", tool_name, e);
-                            serde_json::json!({
-                                "error": e.to_string(),
-                                "success": false
-                            })
-                            .to_string()
+                // Collect results and maintain order
+                let mut tool_results: Vec<(String, String, String)> = Vec::new();
+                while let Some(result) = join_set.join_next().await {
+                    match result {
+                        Ok((tool_call_id, tool_name, tool_result)) => {
+                            let result_content = match tool_result {
+                                Ok(output) => output,
+                                Err(e) => {
+                                    warn!("Tool {} failed: {}", tool_name, e);
+                                    serde_json::json!({
+                                        "error": e.to_string(),
+                                        "success": false
+                                    })
+                                    .to_string()
+                                }
+                            };
+                            tool_results.push((tool_call_id, tool_name, result_content));
                         }
-                    };
+                        Err(e) => {
+                            warn!("Tool execution panicked: {}", e);
+                        }
+                    }
+                }
 
-                    // Add tool result to messages
+                // Add all tool results to messages
+                for (tool_call_id, _tool_name, result_content) in tool_results {
                     messages.push(ChatCompletionRequestMessage::Tool(
                         async_openai::types::ChatCompletionRequestToolMessage {
                             content: async_openai::types::ChatCompletionRequestToolMessageContent::Text(result_content),
-                            tool_call_id: tool_call.id.clone(),
+                            tool_call_id,
                         },
                     ));
                 }

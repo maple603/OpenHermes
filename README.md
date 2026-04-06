@@ -38,13 +38,32 @@ OpenHermes/
 - [x] AIAgent structure with async/await
 - [x] Iteration budget (thread-safe)
 - [x] Conversation loop with tool calling
-- [x] Context compressor (stub)
+- [x] Context compressor with token estimation
 - [x] System prompt builder
+- [x] **Parallel tool execution** (tokio::task::JoinSet)
 
-### Phase 3: Tool System
+### Phase 3: Tool System (22 tools implemented)
 - [x] Central tool registry with trait-based design
 - [x] File tools (read_file, write_file)
-- [x] Terminal tool (execute_code with timeout)
+- [x] **Terminal tool** (execute_code with timeout, **background processes**, process management)
+- [x] **Web search tool** (Tavily + DuckDuckGo backends)
+- [x] **Web extract tool** (HTML to markdown conversion)
+- [x] **URL safety check tool**
+- [x] **Search files tool** (glob pattern matching)
+- [x] **List directory tool** (recursive support)
+- [x] **Copy/Move/Delete file tools**
+- [x] **Create directory tool**
+- [x] **File edit tool** (search/replace)
+- [x] **Todo tool** (create, update, delete, complete, list)
+- [x] **Clarify tool** (request user clarification with options)
+- [x] **Checkpoint tool** (save, restore, list, delete checkpoints)
+- [x] **Memory system** (SQLite + FTS5) - **FULLY FUNCTIONAL**
+  - [x] **Database layer** (connection pool, WAL mode, auto-migration)
+  - [x] **FTS5 engine** (full-text search, triggers, relevance ranking)
+  - [x] **Memory read tool** (real FTS5 search with category filter)
+  - [x] **Memory write tool** (real database insert with auto-ID)
+  - [x] **Memory search tool** (real session history search)
+  - [x] **Global state management** (thread-safe Arc<RwLock>)
 - [x] Tool discovery and registration
 
 ### Phase 4-8: Stub Implementations

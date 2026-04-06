@@ -9,9 +9,15 @@ description = "Memory system for OpenHermes Agent"
 
 [dependencies]
 openhermes-constants = { path = "../openhermes-constants" }
+openhermes-config = { path = "../openhermes-config" }
 
 anyhow.workspace = true
 tracing.workspace = true
 serde_json.workspace = true
+serde.workspace = true
 tokio.workspace = true
 async-trait.workspace = true
+dashmap.workspace = true
+once_cell.workspace = true
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "migrate"] }
+chrono = { version = "0.4", features = ["serde"] }
