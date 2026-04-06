@@ -1,7 +1,5 @@
 //! Skills Hub API client for searching, downloading, and checking skill updates.
 
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

@@ -12,6 +12,9 @@ pub mod memory_tools;
 pub mod skills_tools;
 pub mod skills_manager;
 pub mod skills_hub_client;
+pub mod skill_sandbox;
+pub mod dependency_installer;
+pub mod skill_loader;
 
 pub use registry::{discover_tools, handle_function_call, Tool, ToolRegistry, REGISTRY};
 

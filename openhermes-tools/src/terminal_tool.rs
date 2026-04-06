@@ -1,6 +1,5 @@
 //! Terminal execution tool with background process support.
 
-use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
@@ -79,7 +78,7 @@ impl TerminalTool {
             cmd.current_dir(dir);
         }
 
-        let mut child = cmd.spawn()?;
+        let child = cmd.spawn()?;
         let pid = child.id().unwrap_or(0);
         let process_id = format!("bg_{}", pid);
 

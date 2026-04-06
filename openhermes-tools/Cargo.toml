@@ -27,3 +27,4 @@ chrono = { version = "0.4", features = ["serde"] }
 regex = "1.10"
 urlencoding = "2.1"
 dirs = "5.0"
+notify = { version = "6.1", features = ["macos_fsevent"] }

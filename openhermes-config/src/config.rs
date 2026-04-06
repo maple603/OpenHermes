@@ -137,6 +137,7 @@ pub fn save_config(config: &HermesConfig) -> Result<()> {
 }
 
 /// Load configuration with custom path
+#[allow(dead_code)]
 pub fn load_config_from_path(path: &PathBuf) -> Result<HermesConfig> {
     if !path.exists() {
         warn!("Config file not found at {}", path.display());

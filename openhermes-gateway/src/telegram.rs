@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::json;
 use std::sync::atomic::{AtomicBool, Ordering};
-use tracing::{info, warn, error};
+use tracing::{info, error};
 
 use crate::platform::{PlatformAdapter, PlatformConfig, IncomingMessage, OutgoingMessage, MessageHandler};
 
@@ -94,7 +94,7 @@ impl PlatformAdapter for TelegramAdapter {
         }
 
         // Get token from config
-        let token = &config.token;
+        let _token = &config.token;
         
         // Set base URL (allow custom URL for testing)
         let base_url = config.options.get("base_url")

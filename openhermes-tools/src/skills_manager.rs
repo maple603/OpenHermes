@@ -2,12 +2,15 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
 use crate::skills_hub_client::SkillsHubClient;
+use crate::dependency_installer::DependencyInstaller;
+use crate::skill_sandbox::{SandboxConfig, SandboxManager};
 
 /// Skill manifest metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,6 +52,8 @@ pub enum SkillStatus {
 pub struct SkillsManager {
     skills_dir: PathBuf,
     hub_client: Option<SkillsHubClient>,
+    dependency_installer: DependencyInstaller,
+    sandbox_manager: Mutex<SandboxManager>,
 }
 
 impl SkillsManager {
@@ -67,6 +72,8 @@ impl SkillsManager {
         Ok(Self { 
             skills_dir,
             hub_client: None,
+            dependency_installer: DependencyInstaller::new(),
+            sandbox_manager: Mutex::new(SandboxManager::new(None)),
         })
     }
 
@@ -74,6 +81,13 @@ impl SkillsManager {
     pub fn with_hub(hub_url: Option<String>, api_key: Option<String>) -> Result<Self> {
         let mut manager = Self::new()?;
         manager.hub_client = Some(SkillsHubClient::new(hub_url, api_key));
+        Ok(manager)
+    }
+
+    /// Create with custom sandbox config
+    pub fn with_sandbox_config(config: SandboxConfig) -> Result<Self> {
+        let mut manager = Self::new()?;
+        manager.sandbox_manager = Mutex::new(SandboxManager::new(Some(config)));
         Ok(manager)
     }
 
@@ -144,6 +158,39 @@ impl SkillsManager {
         // Write skill metadata
         self.write_metadata(&skill_info, &skill_dir)?;
 
+        // Install dependencies
+        info!(skill = skill_name, "Installing skill dependencies");
+        if let Err(e) = self.dependency_installer.install_dependencies(&skill_dir).await {
+            warn!(
+                skill = skill_name,
+                error = %e,
+                "Failed to install dependencies, but skill installation succeeded"
+            );
+        }
+
+        // Register skill sandbox
+        {
+            let mut sandbox_mgr = self.sandbox_manager.lock().unwrap();
+            sandbox_mgr.register_skill(
+                skill_name.to_string(),
+                skill_dir.clone(),
+            );
+        }
+
+        // Validate sandbox
+        {
+            let sandbox_mgr = self.sandbox_manager.lock().unwrap();
+            if let Some(sandbox) = sandbox_mgr.get_sandbox(skill_name) {
+                if let Err(e) = sandbox.validate() {
+                    warn!(
+                        skill = skill_name,
+                        error = %e,
+                        "Sandbox validation failed"
+                    );
+                }
+            }
+        }
+
         info!(
             skill = skill_name,
             version = &manifest.version,
@@ -153,11 +200,12 @@ impl SkillsManager {
         Ok(skill_info)
     }
 
-    /// Download skill from hub or URL
+    /// Download skill from hub or URL (placeholder for future implementation)
+    #[allow(dead_code)]
     async fn download_skill(
         &self,
         skill_name: &str,
-        source: &str,
+        _source: &str,
         version: &str,
         target_dir: &Path,
     ) -> Result<()> {

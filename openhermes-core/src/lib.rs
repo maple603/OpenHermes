@@ -4,6 +4,7 @@
 
 mod agent;
 mod budget;
+#[allow(dead_code)]
 mod context_compressor;
 mod prompt_builder;
 mod types;

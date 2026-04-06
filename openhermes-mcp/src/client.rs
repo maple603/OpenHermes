@@ -1,15 +1,13 @@
 //! MCP Client implementation.
 
-use std::sync::Arc;
-
 use anyhow::Result;
 use dashmap::DashMap;
 use reqwest::Client;
-use tracing::{info, warn, error};
+use tracing::info;
 
 use crate::types::{
     JsonRpcRequest, JsonRpcResponse, McpServerConfig, McpToolDefinition,
-    McpInitializeResult, McpToolListResponse, McpToolCallRequest,
+    McpInitializeResult, McpToolListResponse,
     McpToolCallResponse,
 };
 

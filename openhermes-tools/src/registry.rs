@@ -123,6 +123,35 @@ impl ToolRegistry {
         self.tools.get(name).map(|r| r.value().toolset().to_string())
     }
 
+    /// Unregister a tool by name
+    pub fn unregister(&self, name: &str) -> bool {
+        if self.tools.remove(name).is_some() {
+            debug!("Unregistered tool: {}", name);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Unregister all tools belonging to a toolset
+    pub fn unregister_toolset(&self, toolset: &str) -> Vec<String> {
+        let names_to_remove: Vec<String> = self.tools
+            .iter()
+            .filter(|entry| entry.value().toolset() == toolset)
+            .map(|entry| entry.key().clone())
+            .collect();
+
+        for name in &names_to_remove {
+            self.tools.remove(name);
+        }
+
+        if !names_to_remove.is_empty() {
+            debug!("Unregistered {} tools from toolset: {}", names_to_remove.len(), toolset);
+        }
+
+        names_to_remove
+    }
+
     /// Check if toolset requirements are met
     pub fn check_toolset_requirements(&self, toolset: &str) -> bool {
         self.toolset_checks

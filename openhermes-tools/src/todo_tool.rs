@@ -1,6 +1,5 @@
 //! Todo list management tool.
 
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;

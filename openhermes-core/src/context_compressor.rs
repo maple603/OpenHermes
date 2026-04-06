@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use async_openai::types::ChatCompletionRequestMessage;
-use tracing::{info, warn};
+use tracing::info;
 
 /// Estimate tokens in a message (rough approximation)
 fn estimate_tokens(text: &str) -> usize {

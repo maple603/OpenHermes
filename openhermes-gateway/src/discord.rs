@@ -6,7 +6,7 @@ use serde_json::json;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::{info, warn};
 
-use crate::platform::{PlatformAdapter, PlatformConfig, IncomingMessage, OutgoingMessage, MessageHandler};
+use crate::platform::{PlatformAdapter, PlatformConfig, OutgoingMessage, MessageHandler};
 
 /// Discord bot adapter
 pub struct DiscordAdapter {
@@ -55,7 +55,7 @@ impl PlatformAdapter for DiscordAdapter {
         Ok(())
     }
 
-    async fn start(&self, handler: Box<dyn MessageHandler>) -> anyhow::Result<()> {
+    async fn start(&self, _handler: Box<dyn MessageHandler>) -> anyhow::Result<()> {
         info!("Starting Discord bot gateway");
         
         // TODO: Implement Discord gateway connection

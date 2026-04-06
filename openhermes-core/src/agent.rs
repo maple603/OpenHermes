@@ -15,7 +15,7 @@ use tokio::task::JoinSet;
 use tracing::{debug, info, warn};
 
 use openhermes_config::HermesConfig;
-use openhermes_tools::{discover_tools, init_tools, ToolRegistry};
+use openhermes_tools::{discover_tools, init_tools};
 
 use super::budget::IterationBudget;
 use super::context_compressor::ContextCompressor;
@@ -29,6 +29,7 @@ pub struct AIAgent {
     session_id: String,
     conversation_history: Arc<Mutex<Vec<ChatCompletionRequestMessage>>>,
     iteration_budget: Arc<IterationBudget>,
+    #[allow(dead_code)]
     context_compressor: Option<ContextCompressor>,
     platform: String,
 }

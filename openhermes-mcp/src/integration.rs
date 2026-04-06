@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use tracing::{info, warn};
+use tracing::info;
 
 use openhermes_tools::registry::REGISTRY;
 use crate::client::McpClient;

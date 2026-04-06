@@ -24,8 +24,15 @@ pub async fn set_skills_manager(manager: Arc<SkillsManager>) {
     info!("Skills manager set globally");
 }
 
-/// Get the global skills manager
+/// Get the global skills manager for reading
 async fn get_skills_manager() -> Option<Arc<SkillsManager>> {
+    let guard = SKILLS_MANAGER.read().await;
+    guard.clone()
+}
+
+/// Get the global skills manager for writing
+#[allow(dead_code)]
+async fn get_skills_manager_mut() -> Option<Arc<SkillsManager>> {
     let guard = SKILLS_MANAGER.read().await;
     guard.clone()
 }

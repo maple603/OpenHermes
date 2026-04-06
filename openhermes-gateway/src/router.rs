@@ -63,20 +63,23 @@ impl MessageRouter {
         
         let adapters = self.adapters.read().await;
         
-        for (name, adapter) in adapters.iter() {
+        for (name, _adapter) in adapters.iter() {
             // Clone for async task
-            let handler_clone = handler.clone();
-            let adapter_clone: Box<dyn PlatformAdapter> = match name.as_str() {
+            let _handler_clone = handler.clone();
+            let _adapter_clone: Box<dyn PlatformAdapter> = match name.as_str() {
                 // In production, implement proper clone for each adapter
                 _ => return Err(anyhow::anyhow!("Platform {} not supported", name)),
             };
             
-            // Start in background task
-            tokio::spawn(async move {
-                if let Err(e) = adapter_clone.start(Box::new(MessageHandlerWrapper(handler_clone))).await {
-                    error!(platform = %name, error = %e, "Platform start failed");
-                }
-            });
+            // Start in background task (unreachable for now, kept for future implementation)
+            #[allow(unreachable_code)]
+            {
+                tokio::spawn(async move {
+                    if let Err(e) = _adapter_clone.start(Box::new(MessageHandlerWrapper(_handler_clone))).await {
+                        error!(platform = %name, error = %e, "Platform start failed");
+                    }
+                });
+            }
         }
         
         info!("All platforms started");

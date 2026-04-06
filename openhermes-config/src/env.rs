@@ -28,6 +28,7 @@ pub fn load_dotenv() -> Result<()> {
 }
 
 /// Load environment variables from a custom path
+#[allow(dead_code)]
 pub fn load_dotenv_from_path(path: &std::path::PathBuf) -> Result<()> {
     if !path.exists() {
         return Ok(());
@@ -40,6 +41,7 @@ pub fn load_dotenv_from_path(path: &std::path::PathBuf) -> Result<()> {
 }
 
 /// Load environment variables from project root .env (for development)
+#[allow(dead_code)]
 pub fn load_project_dotenv() -> Result<()> {
     let project_env = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
