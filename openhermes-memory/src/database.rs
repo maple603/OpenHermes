@@ -360,6 +360,126 @@ impl MemoryDatabase {
         info!(id = id, "Memory deleted");
         Ok(())
     }
+
+    /// Get memory by ID
+    pub async fn get_memory(&self, id: &str) -> Result<Option<serde_json::Value>> {
+        let row = sqlx::query(
+            "SELECT id, key, value, category, tags, importance, access_count, created_at, updated_at FROM memory_entries WHERE id = ?",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if let Some(row) = row {
+            let tags_str: String = row.get("tags");
+            let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
+
+            Ok(Some(serde_json::json!({
+                "id": row.get::<String, _>("id"),
+                "key": row.get::<String, _>("key"),
+                "value": row.get::<String, _>("value"),
+                "category": row.get::<String, _>("category"),
+                "tags": tags,
+                "importance": row.get::<f64, _>("importance"),
+                "access_count": row.get::<i64, _>("access_count"),
+                "created_at": row.get::<String, _>("created_at"),
+                "updated_at": row.get::<String, _>("updated_at")
+            })))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// List memories with pagination
+    pub async fn list_memories(
+        &self,
+        category: Option<&str>,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<serde_json::Value>> {
+        let results = if let Some(cat) = category {
+            let rows = sqlx::query(
+                "SELECT id, key, value, category, tags, importance, access_count, created_at, updated_at FROM memory_entries WHERE category = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+            )
+            .bind(cat)
+            .bind(limit as i64)
+            .bind(offset as i64)
+            .fetch_all(&self.pool)
+            .await?;
+
+            rows.iter().map(|row| {
+                let tags_str: String = row.get("tags");
+                let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
+
+                serde_json::json!({
+                    "id": row.get::<String, _>("id"),
+                    "key": row.get::<String, _>("key"),
+                    "value": row.get::<String, _>("value"),
+                    "category": row.get::<String, _>("category"),
+                    "tags": tags,
+                    "importance": row.get::<f64, _>("importance"),
+                    "access_count": row.get::<i64, _>("access_count"),
+                    "created_at": row.get::<String, _>("created_at"),
+                    "updated_at": row.get::<String, _>("updated_at")
+                })
+            }).collect()
+        } else {
+            let rows = sqlx::query(
+                "SELECT id, key, value, category, tags, importance, access_count, created_at, updated_at FROM memory_entries ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+            )
+            .bind(limit as i64)
+            .bind(offset as i64)
+            .fetch_all(&self.pool)
+            .await?;
+
+            rows.iter().map(|row| {
+                let tags_str: String = row.get("tags");
+                let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
+
+                serde_json::json!({
+                    "id": row.get::<String, _>("id"),
+                    "key": row.get::<String, _>("key"),
+                    "value": row.get::<String, _>("value"),
+                    "category": row.get::<String, _>("category"),
+                    "tags": tags,
+                    "importance": row.get::<f64, _>("importance"),
+                    "access_count": row.get::<i64, _>("access_count"),
+                    "created_at": row.get::<String, _>("created_at"),
+                    "updated_at": row.get::<String, _>("updated_at")
+                })
+            }).collect()
+        };
+
+        Ok(results)
+    }
+
+    /// Get memory statistics
+    pub async fn get_stats(&self) -> Result<serde_json::Value> {
+        let total_row = sqlx::query("SELECT COUNT(*) as count FROM memory_entries")
+            .fetch_one(&self.pool)
+            .await?;
+        
+        let total_count = total_row.get::<i64, _>("count");
+
+        let category_stats = sqlx::query(
+            "SELECT category, COUNT(*) as count, AVG(importance) as avg_importance FROM memory_entries GROUP BY category",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let categories: Vec<serde_json::Value> = category_stats.iter().map(|row| {
+            serde_json::json!({
+                "category": row.get::<String, _>("category"),
+                "count": row.get::<i64, _>("count"),
+                "avg_importance": row.get::<f64, _>("avg_importance")
+            })
+        }).collect();
+
+        Ok(serde_json::json!({
+            "total_memories": total_count,
+            "categories": categories
+        }))
+    }
 }
 
 /// Convert database row to JSON

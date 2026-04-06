@@ -1600,6 +1600,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "dashmap",
+ "dirs",
  "glob",
  "once_cell",
  "openhermes-constants",

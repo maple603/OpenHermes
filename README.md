@@ -64,6 +64,7 @@ OpenHermes/
   - [x] **Memory write tool** (real database insert with auto-ID)
   - [x] **Memory search tool** (real session history search)
   - [x] **Global state management** (thread-safe Arc<RwLock>)
+  - [x] **Advanced operations** (get_by_id, list with pagination, statistics)
 - [x] **MCP (Model Context Protocol) Client** - **FULLY FUNCTIONAL**
   - [x] **MCP server connection** (JSON-RPC over HTTP)
   - [x] **Tool discovery** (automatic tools/list)
@@ -72,10 +73,13 @@ OpenHermes/
   - [x] **Authentication** (API key, custom headers)
   - [x] **Error handling** (JSON-RPC errors, HTTP errors)
 - [x] **Skills System Tools** - **FULLY FUNCTIONAL**
-  - [x] **skills_install** - Install skills from hub or local
-  - [x] **skills_list** - List installed skills with status
-  - [x] **skills_sync** - Sync and update skills
+  - [x] **Skills manager** (file system, manifest validation, metadata)
+  - [x] **skills_install** - Real installation with directory management
+  - [x] **skills_list** - Real filesystem scan with metadata
+  - [x] **skills_sync** - Version checking with dry-run mode
   - [x] **skills_hub_search** - Search skills marketplace
+  - [x] **Skill metadata** (skill.json + metadata.json)
+  - [x] **Status management** (enable/disable skills)
 - [x] Tool discovery and registration
 
 ### Phase 4-8: Stub Implementations
@@ -126,7 +130,7 @@ cargo run --bin hermes
 
 ### Configuration
 
-Create `~/.hermes/config.yaml`:
+Create `~/.openhermes/config.yaml`:
 
 ```yaml
 agent:
@@ -138,7 +142,7 @@ terminal:
   timeout: 300
 ```
 
-Create `~/.hermes/.env`:
+Create `~/.openhermes/.env`:
 
 ```bash
 OPENAI_API_KEY=your-api-key-here

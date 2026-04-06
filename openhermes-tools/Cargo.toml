@@ -26,3 +26,4 @@ url = "2.5"
 chrono = { version = "0.4", features = ["serde"] }
 regex = "1.10"
 urlencoding = "2.1"
+dirs = "5.0"

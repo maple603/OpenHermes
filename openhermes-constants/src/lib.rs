@@ -76,9 +76,9 @@ pub fn parse_reasoning_effort(effort: &str) -> Option<ReasoningEffortConfig> {
 // Hermes Home Directory
 // ============================================================================
 
-/// Get the Hermes home directory (default: ~/.hermes).
+/// Get the Hermes home directory (default: ~/.openhermes).
 ///
-/// Reads HERMES_HOME env var, falls back to ~/.hermes.
+/// Reads HERMES_HOME env var, falls back to ~/.openhermes.
 /// This is the single source of truth — all other copies should import this.
 pub fn get_hermes_home() -> PathBuf {
     std::env::var("HERMES_HOME")
@@ -86,7 +86,7 @@ pub fn get_hermes_home() -> PathBuf {
         .unwrap_or_else(|_| {
             dirs::home_dir()
                 .unwrap_or_default()
-                .join(".hermes")
+                .join(".openhermes")
         })
 }
 
@@ -122,12 +122,12 @@ pub fn get_hermes_dir(new_subpath: &str, old_name: &str) -> PathBuf {
 /// Return a user-friendly display string for the current HERMES_HOME.
 ///
 /// Uses `~/` shorthand for readability:
-/// - default: `~/.hermes`
-/// - profile: `~/.hermes/profiles/coder`
+/// - default: `~/.openhermes`
+/// - profile: `~/.openhermes/profiles/coder`
 /// - custom: `/opt/hermes-custom`
 ///
 /// Use this in **user-facing** print/log messages instead of hardcoding
-/// `~/.hermes`. For code that needs a real `Path`, use [`get_hermes_home`] instead.
+/// `~/.openhermes`. For code that needs a real `Path`, use [`get_hermes_home`] instead.
 pub fn display_hermes_home() -> String {
     let home = get_hermes_home();
     if let Some(home_dir) = dirs::home_dir() {
