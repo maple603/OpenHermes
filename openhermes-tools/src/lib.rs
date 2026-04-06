@@ -11,6 +11,7 @@ pub mod checkpoint_tool;
 pub mod memory_tools;
 pub mod skills_tools;
 pub mod skills_manager;
+pub mod skills_hub_client;
 
 pub use registry::{discover_tools, handle_function_call, Tool, ToolRegistry, REGISTRY};
 

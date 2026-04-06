@@ -7,6 +7,8 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
+use crate::skills_hub_client::SkillsHubClient;
+
 /// Skill manifest metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkillManifest {
@@ -46,6 +48,7 @@ pub enum SkillStatus {
 /// Skills manager
 pub struct SkillsManager {
     skills_dir: PathBuf,
+    hub_client: Option<SkillsHubClient>,
 }
 
 impl SkillsManager {
@@ -61,7 +64,17 @@ impl SkillsManager {
             info!(path = ?skills_dir, "Created skills directory");
         }
 
-        Ok(Self { skills_dir })
+        Ok(Self { 
+            skills_dir,
+            hub_client: None,
+        })
+    }
+
+    /// Create with Hub client
+    pub fn with_hub(hub_url: Option<String>, api_key: Option<String>) -> Result<Self> {
+        let mut manager = Self::new()?;
+        manager.hub_client = Some(SkillsHubClient::new(hub_url, api_key));
+        Ok(manager)
     }
 
     /// Get the skills directory path
@@ -97,9 +110,20 @@ impl SkillsManager {
         })?;
 
         // Download or copy skill files
-        if source == "hub" || source.starts_with("http") {
-            self.download_skill(skill_name, source, version, &skill_dir).await?;
+        if source == "hub" {
+            if let Some(hub) = &self.hub_client {
+                // Download from Hub
+                hub.download_skill(skill_name, version, &skill_dir).await?;
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Skills Hub client not configured. Cannot install from hub."
+                ));
+            }
+        } else if source.starts_with("http") {
+            // Download from URL
+            self.download_skill_from_url(source, &skill_dir).await?;
         } else {
+            // Copy from local path
             self.copy_skill_from_path(source, &skill_dir)?;
         }
 
@@ -165,6 +189,33 @@ impl SkillsManager {
         // Create tools directory
         let tools_dir = target_dir.join("tools");
         fs::create_dir_all(&tools_dir)?;
+
+        Ok(())
+    }
+
+    /// Download skill from URL
+    async fn download_skill_from_url(&self, url: &str, target_dir: &Path) -> Result<()> {
+        info!(url = url, "Downloading skill from URL");
+        
+        let response = reqwest::get(url).await
+            .with_context(|| format!("Failed to download from URL: {}", url))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await?;
+            return Err(anyhow::anyhow!("Download error {}: {}", status, error_text));
+        }
+
+        let bytes = response.bytes().await?;
+        
+        // Save to temporary file
+        let temp_file = target_dir.join("download.zip");
+        std::fs::write(&temp_file, &bytes).with_context(|| {
+            format!("Failed to write downloaded file: {:?}", temp_file)
+        })?;
+
+        // TODO: Extract ZIP when zip crate is added
+        warn!("ZIP extraction not yet implemented, saved as ZIP file");
 
         Ok(())
     }
@@ -354,6 +405,21 @@ impl SkillsManager {
         }
 
         Ok(())
+    }
+
+    /// Check for skill updates
+    pub async fn check_skill_updates(&self, skill_name: &str) -> Result<Option<String>> {
+        let skill_info = self.get_skill(skill_name)?;
+        
+        if let Some(info) = skill_info {
+            if let Some(hub) = &self.hub_client {
+                if let Some(latest_version) = hub.check_updates(&info.name, &info.version).await? {
+                    return Ok(Some(latest_version.version));
+                }
+            }
+        }
+        
+        Ok(None)
     }
 
     /// Get skills directory
