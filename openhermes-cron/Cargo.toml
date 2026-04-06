@@ -1,0 +1,13 @@
+[package]
+name = "openhermes-cron"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Cron scheduler for OpenHermes Agent"
+
+[dependencies]
+anyhow.workspace = true
+tracing.workspace = true
+tokio.workspace = true

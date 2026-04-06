@@ -1,0 +1,23 @@
+[package]
+name = "openhermes-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "CLI interface for OpenHermes Agent"
+
+[dependencies]
+openhermes-constants = { path = "../openhermes-constants" }
+openhermes-config = { path = "../openhermes-config" }
+openhermes-core = { path = "../openhermes-core" }
+
+tokio.workspace = true
+clap.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[[bin]]
+name = "hermes"
+path = "src/main.rs"

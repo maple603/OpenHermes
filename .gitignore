@@ -1,0 +1,25 @@
+# Build output
+/target/
+**/*.rs.bk
+*.pdb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env
+
+# Hermes home (local testing)
+.hermes/
+
+# Logs
+*.log

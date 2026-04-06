@@ -1,0 +1,20 @@
+[package]
+name = "openhermes-tools"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Tool system for OpenHermes Agent"
+
+[dependencies]
+openhermes-constants = { path = "../openhermes-constants" }
+
+tokio.workspace = true
+async-trait.workspace = true
+async-openai.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+dashmap.workspace = true
+once_cell.workspace = true

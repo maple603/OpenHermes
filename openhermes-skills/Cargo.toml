@@ -1,0 +1,18 @@
+[package]
+name = "openhermes-skills"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Skills system for OpenHermes Agent"
+
+[dependencies]
+openhermes-constants = { path = "../openhermes-constants" }
+
+anyhow.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+dashmap.workspace = true
+once_cell.workspace = true

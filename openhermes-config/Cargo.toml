@@ -1,0 +1,18 @@
+[package]
+name = "openhermes-config"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Configuration management for OpenHermes Agent"
+
+[dependencies]
+openhermes-constants = { path = "../openhermes-constants" }
+
+serde.workspace = true
+serde_yaml.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+dotenvy.workspace = true
