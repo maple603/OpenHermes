@@ -64,3 +64,5 @@ parking_lot = "0.12"
 dashmap = "6"
 dirs = "5"
 dotenvy = "0.15"
+rust_decimal = { version = "1", features = ["serde"] }
+rand = "0.8"

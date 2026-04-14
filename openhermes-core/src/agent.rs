@@ -19,11 +19,16 @@ use openhermes_tools::{discover_tools, init_tools};
 
 use super::budget::IterationBudget;
 use super::context_compressor::ContextCompressor;
+use super::credential_pool::CredentialPool;
 use super::prompt_builder::build_system_prompt;
+use super::redact::redact_sensitive_text;
+use super::smart_routing::{self, RoutingConfig};
+use super::usage_pricing::{self, CanonicalUsage};
 
 /// Main AI Agent structure
 pub struct AIAgent {
     client: Client<OpenAIConfig>,
+    #[allow(dead_code)]
     model: String,
     max_iterations: usize,
     session_id: String,
@@ -32,6 +37,15 @@ pub struct AIAgent {
     #[allow(dead_code)]
     context_compressor: Option<ContextCompressor>,
     platform: String,
+    /// Credential pool for multi-key failover.
+    #[allow(dead_code)]
+    credential_pool: Option<Arc<Mutex<CredentialPool>>>,
+    /// Smart model routing config.
+    routing_config: RoutingConfig,
+    /// Accumulated usage for this session.
+    session_usage: Arc<Mutex<CanonicalUsage>>,
+    /// Number of user messages (for title generation trigger).
+    user_msg_count: Arc<Mutex<usize>>,
 }
 
 impl AIAgent {
@@ -60,6 +74,22 @@ impl AIAgent {
             None
         };
 
+        // Load credential pool (best-effort).
+        let credential_pool = match CredentialPool::load("openai") {
+            Ok(pool) if pool.total_count() > 0 => {
+                info!("Loaded credential pool with {} credentials", pool.total_count());
+                Some(Arc::new(Mutex::new(pool)))
+            }
+            _ => None,
+        };
+
+        // Routing config (disabled by default; read from config when available).
+        let routing_config = RoutingConfig {
+            primary_model: model.clone(),
+            cheap_model: String::new(),
+            enabled: false,
+        };
+
         Ok(Self {
             client,
             model,
@@ -69,6 +99,10 @@ impl AIAgent {
             iteration_budget: Arc::new(IterationBudget::new(max_iterations)),
             context_compressor: compressor,
             platform: "cli".to_string(),
+            credential_pool,
+            routing_config,
+            session_usage: Arc::new(Mutex::new(CanonicalUsage::default())),
+            user_msg_count: Arc::new(Mutex::new(0)),
         })
     }
 
@@ -80,6 +114,19 @@ impl AIAgent {
 
     /// Full conversation interface with tool calling loop
     pub async fn run_conversation(&self, user_message: &str) -> Result<ConversationResult> {
+        // Increment user message count.
+        {
+            let mut count = self.user_msg_count.lock();
+            *count += 1;
+        }
+
+        // Smart model routing.
+        let route_decision = smart_routing::choose_model_route(user_message, &self.routing_config);
+        let effective_model = route_decision.model.clone();
+        if route_decision.is_cheap {
+            debug!(model = %effective_model, reason = %route_decision.reason, "Using cheap model");
+        }
+
         let mut history = self.conversation_history.lock();
 
         // Add user message
@@ -110,7 +157,7 @@ impl AIAgent {
 
             // Create request
             let request = CreateChatCompletionRequest {
-                model: self.model.clone(),
+                model: effective_model.clone(),
                 messages: messages.clone(),
                 tools: if tool_definitions.is_empty() {
                     None
@@ -146,6 +193,10 @@ impl AIAgent {
                     join_set.spawn(async move {
                         debug!("Executing tool: {}", tool_name);
                         let result = openhermes_tools::handle_function_call(&tool_name, &tool_args).await;
+                        // Redact sensitive data from tool output.
+                        let result = result.map(|output| {
+                            redact_sensitive_text(&output)
+                        });
                         (tool_call_id, tool_name, result)
                     });
                 }
@@ -203,6 +254,37 @@ impl AIAgent {
                     history.push(assistant_msg);
                 }
 
+                // Track usage if available.
+                if let Some(usage) = &response.usage {
+                    let raw_usage = serde_json::to_value(usage).unwrap_or_default();
+                    let canonical = usage_pricing::normalize_usage(&raw_usage);
+                    let cost = usage_pricing::estimate_cost(
+                        &effective_model, &canonical, None, None,
+                    );
+                    debug!(
+                        tokens = canonical.total_tokens(),
+                        cost = %usage_pricing::format_cost(&cost),
+                        "Request usage"
+                    );
+                    self.session_usage.lock().accumulate(&canonical);
+                }
+
+                // Spawn title generation after first exchange.
+                {
+                    let count = *self.user_msg_count.lock();
+                    if count <= 1 {
+                        super::title_generator::spawn_title_generation(
+                            self.client.clone(),
+                            effective_model.clone(),
+                            user_message.to_string(),
+                            final_response.clone(),
+                            |title| {
+                                info!(title = %title, "Session title generated");
+                            },
+                        );
+                    }
+                }
+
                 info!(
                     "Conversation completed: {} API calls, {} tool calls",
                     api_call_count, tool_calls_total
@@ -240,6 +322,11 @@ impl AIAgent {
     /// Get remaining iterations
     pub fn remaining_iterations(&self) -> usize {
         self.iteration_budget.remaining()
+    }
+
+    /// Get accumulated session usage.
+    pub fn session_usage(&self) -> CanonicalUsage {
+        self.session_usage.lock().clone()
     }
 }
 
