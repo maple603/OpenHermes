@@ -8,6 +8,13 @@ license.workspace = true
 description = "Cron scheduler for OpenHermes Agent"
 
 [dependencies]
+openhermes-constants = { path = "../openhermes-constants" }
+
 anyhow.workspace = true
 tracing.workspace = true
 tokio.workspace = true
+chrono.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+uuid.workspace = true
+reqwest.workspace = true

@@ -1723,8 +1723,14 @@ name = "openhermes-cron"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
+ "openhermes-constants",
+ "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1807,6 +1813,7 @@ dependencies = [
  "once_cell",
  "openhermes-constants",
  "openhermes-memory",
+ "parking_lot",
  "regex",
  "reqwest",
  "serde",
@@ -1815,6 +1822,7 @@ dependencies = [
  "tracing",
  "url",
  "urlencoding",
+ "uuid",
 ]
 
 [[package]]

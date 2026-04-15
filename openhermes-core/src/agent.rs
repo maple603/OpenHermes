@@ -1,5 +1,6 @@
 //! AI Agent with tool calling capabilities.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -19,7 +20,9 @@ use openhermes_tools::{discover_tools, init_tools};
 
 use super::budget::IterationBudget;
 use super::context_compressor::ContextCompressor;
+use super::context_references;
 use super::credential_pool::CredentialPool;
+use super::model_metadata;
 use super::prompt_builder::build_system_prompt;
 use super::redact::redact_sensitive_text;
 use super::smart_routing::{self, RoutingConfig};
@@ -34,8 +37,7 @@ pub struct AIAgent {
     session_id: String,
     conversation_history: Arc<Mutex<Vec<ChatCompletionRequestMessage>>>,
     iteration_budget: Arc<IterationBudget>,
-    #[allow(dead_code)]
-    context_compressor: Option<ContextCompressor>,
+    context_compressor: Mutex<Option<ContextCompressor>>,
     platform: String,
     /// Credential pool for multi-key failover.
     #[allow(dead_code)]
@@ -46,6 +48,10 @@ pub struct AIAgent {
     session_usage: Arc<Mutex<CanonicalUsage>>,
     /// Number of user messages (for title generation trigger).
     user_msg_count: Arc<Mutex<usize>>,
+    /// Model context window size (tokens).
+    context_length: usize,
+    /// Working directory for context references.
+    working_dir: PathBuf,
 }
 
 impl AIAgent {
@@ -67,9 +73,16 @@ impl AIAgent {
             openhermes_constants::DEFAULT_MAX_ITERATIONS
         };
 
-        // Create context compressor if needed
-        let compressor = if config.agent.max_iterations > 0 {
-            Some(ContextCompressor::new())
+        // Resolve context length from model metadata
+        let base_url = std::env::var("OPENAI_BASE_URL").ok();
+        let context_length = model_metadata::get_model_context_length(&model, base_url.as_deref());
+        info!(model = %model, context_length = context_length, "Resolved model context window");
+
+        // Create context compressor with model-aware thresholds
+        let compressor = if max_iterations > 0 {
+            let threshold = context_length * 80 / 100; // compress at 80% of context
+            let target = context_length * 60 / 100;    // target 60% after compression
+            Some(ContextCompressor::with_thresholds(threshold, target))
         } else {
             None
         };
@@ -97,12 +110,14 @@ impl AIAgent {
             session_id: uuid::Uuid::new_v4().to_string(),
             conversation_history: Arc::new(Mutex::new(Vec::new())),
             iteration_budget: Arc::new(IterationBudget::new(max_iterations)),
-            context_compressor: compressor,
+            context_compressor: Mutex::new(compressor),
             platform: "cli".to_string(),
             credential_pool,
             routing_config,
             session_usage: Arc::new(Mutex::new(CanonicalUsage::default())),
             user_msg_count: Arc::new(Mutex::new(0)),
+            context_length,
+            working_dir: std::env::current_dir().unwrap_or_default(),
         })
     }
 
@@ -127,12 +142,32 @@ impl AIAgent {
             debug!(model = %effective_model, reason = %route_decision.reason, "Using cheap model");
         }
 
+        // Preprocess context references (@file:, @folder:, @git:, etc.)
+        let ctx_result = context_references::preprocess_context_references(
+            user_message,
+            &self.working_dir,
+            self.context_length,
+        );
+        if ctx_result.expanded {
+            debug!(
+                injected_tokens = ctx_result.injected_tokens,
+                refs = ctx_result.references.len(),
+                "Expanded context references"
+            );
+        }
+        for w in &ctx_result.warnings {
+            warn!("Context reference warning: {}", w);
+        }
+        let effective_user_message = &ctx_result.message;
+
         let mut history = self.conversation_history.lock();
 
-        // Add user message
+        // Add user message (with expanded context references)
         history.push(ChatCompletionRequestMessage::User(
             ChatCompletionRequestUserMessage {
-                content: ChatCompletionRequestUserMessageContent::Text(user_message.to_string()),
+                content: ChatCompletionRequestUserMessageContent::Text(
+                    effective_user_message.to_string(),
+                ),
                 name: None,
             },
         ));
@@ -147,6 +182,16 @@ impl AIAgent {
         )];
 
         messages.extend(history.clone());
+
+        // Compress context if needed (before entering the LLM loop)
+        {
+            let mut compressor_guard = self.context_compressor.lock();
+            if let Some(ref mut compressor) = *compressor_guard {
+                if let Err(e) = compressor.compress_if_needed(&mut messages).await {
+                    warn!("Context compression failed: {}", e);
+                }
+            }
+        }
 
         let mut api_call_count = 0;
         let mut tool_calls_total = 0;

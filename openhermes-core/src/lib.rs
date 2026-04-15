@@ -5,8 +5,7 @@
 
 mod agent;
 mod budget;
-#[allow(dead_code)]
-mod context_compressor;
+pub mod context_compressor;
 mod prompt_builder;
 mod types;
 
@@ -18,6 +17,13 @@ pub mod smart_routing;
 pub mod title_generator;
 pub mod usage_pricing;
 pub mod credential_pool;
+
+// P1 Agent Core Features
+pub mod model_metadata;
+pub mod prompt_caching;
+pub mod context_references;
+pub mod anthropic_adapter;
+pub mod auxiliary_client;
 
 pub use agent::AIAgent;
 pub use budget::IterationBudget;

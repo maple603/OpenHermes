@@ -16,6 +16,20 @@ pub mod skill_sandbox;
 pub mod dependency_installer;
 pub mod skill_loader;
 
+// P1 Tools
+pub mod approval_tool;
+pub mod session_search_tool;
+pub mod delegate_tool;
+pub mod cronjob_tool;
+pub mod code_execution_tool;
+pub mod send_message_tool;
+pub mod mixture_of_agents_tool;
+pub mod vision_tool;
+pub mod image_generation_tool;
+pub mod tts_tool;
+pub mod browser_tool;
+pub mod llm_client;
+
 pub use registry::{discover_tools, handle_function_call, Tool, ToolRegistry, REGISTRY};
 
 use std::sync::Arc;
@@ -68,6 +82,24 @@ pub fn init_tools() {
     REGISTRY.register(Arc::new(skills_tools::SkillsListTool));
     REGISTRY.register(Arc::new(skills_tools::SkillsSyncTool));
     REGISTRY.register(Arc::new(skills_tools::SkillsHubSearchTool));
+
+    // P1 Tools: Core real implementations
+    REGISTRY.register(Arc::new(session_search_tool::SessionSearchTool));
+    REGISTRY.register(Arc::new(delegate_tool::DelegateTaskTool));
+    REGISTRY.register(Arc::new(cronjob_tool::CronjobTool));
+    REGISTRY.register(Arc::new(code_execution_tool::CodeExecutionTool));
+    REGISTRY.register(Arc::new(send_message_tool::SendMessageTool));
+    REGISTRY.register(Arc::new(mixture_of_agents_tool::MixtureOfAgentsTool));
+
+    // P1 Tools: Structured stubs (service-dependent)
+    REGISTRY.register(Arc::new(vision_tool::VisionTool));
+    REGISTRY.register(Arc::new(image_generation_tool::ImageGenerationTool));
+    REGISTRY.register(Arc::new(tts_tool::TtsTool));
+
+    // P1 Tools: Browser tools (10)
+    for tool in browser_tool::all_browser_tools() {
+        REGISTRY.register(tool);
+    }
     
     let tool_count = REGISTRY.get_all_tool_names().len();
     tracing::info!("Initialized {} built-in tools", tool_count);

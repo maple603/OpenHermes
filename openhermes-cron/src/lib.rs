@@ -1,24 +1,12 @@
 //! Cron scheduler for OpenHermes Agent.
 //!
-//! Placeholder implementation - will use tokio-cron-scheduler.
+//! Provides job storage, scheduling, and tick-based execution.
 
-/// Cron scheduler
-pub struct CronScheduler;
+pub mod jobs;
+pub mod scheduler;
 
-impl CronScheduler {
-    pub fn new() -> Self {
-        Self
-    }
+pub use jobs::{CronJob, JobStatus, JobStore, ScheduleKind};
+pub use scheduler::Scheduler;
 
-    pub async fn start(&self) -> anyhow::Result<()> {
-        // TODO: Implement cron scheduler
-        tracing::info!("Cron scheduler not yet implemented");
-        Ok(())
-    }
-}
-
-impl Default for CronScheduler {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+/// Legacy alias for backward compatibility.
+pub type CronScheduler = Scheduler;
